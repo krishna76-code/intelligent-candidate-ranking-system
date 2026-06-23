@@ -1,54 +1,144 @@
-"""
-hard_filters.py — instant disqualifiers (score -> 0).
-
-These are cheap rules applied BEFORE feature scoring. They remove ~30,000+
-candidates so we never waste compute scoring obvious rejects.
-
-Verified counts against the real 100K file:
-    - Honeypot: Krutrim start < 2023 (founded Dec 2023)        -> 38
-    - Honeypot: Sarvam start < 2023 (founded 2023)             -> 36
-    - Honeypot: >=3 skills "expert" with duration_months == 0  -> 21
-    - Consulting-only careers (TCS/Infosys/Wipro/...)          -> 9,745
-    - Foreign (country != India) AND willing_to_relocate False -> 17,756
-    - Non-eng title (Marketing/HR/Sales/...) + AI skills       -> 4,931
-
-API to implement:
-    def is_disqualified(candidate: dict, constants) -> tuple[bool, str]:
-        '''Return (True, reason) if the candidate should be hard-filtered to 0.'''
-
-TODO: implement. Placeholder skeleton.
-"""
-
 from __future__ import annotations
 
-# from src.utils.constants import CONSULTING_FIRMS, COMPANY_FOUNDED, NON_ENG_TITLES, AI_SKILL_TERMS
+from src.utils.constants import (
+    CONSULTING_COMPANIES,
+    COMPANY_FOUNDED,
+    NON_ENGINEERING_TITLES,
+    AI_SKILL_TERMS,
+)
 
 
-def is_honeypot_company_founding(candidate: dict, company_founded: dict) -> bool:
-    """start_year < founded_year for a known-young company."""
-    raise NotImplementedError
+def is_honeypot_company_founding(candidate: dict,
+                                 company_founded: dict) -> bool:
+    """
+    start_year < founded_year for known young companies.
+    """
+
+    for exp in candidate.get("career_history", []):
+
+        company = exp.get("company", "").strip().lower()
+        start_year = exp.get("start_year")
+
+        if company in company_founded:
+
+            if start_year is not None and start_year < company_founded[company]:
+                return True
+
+    return False
 
 
-def is_honeypot_zero_duration_expert(candidate: dict, threshold: int = 3) -> bool:
-    """>= threshold skills with proficiency == 'expert' AND duration_months == 0."""
-    raise NotImplementedError
+def is_honeypot_zero_duration_expert(candidate: dict,
+                                     threshold: int = 3) -> bool:
+    """
+    >= threshold skills with proficiency='expert'
+    and duration_months == 0.
+    """
+
+    count = 0
+
+    for skill in candidate.get("skills", []):
+
+        proficiency = skill.get("proficiency", "").lower()
+        duration = skill.get("duration_months", -1)
+
+        if proficiency == "expert" and duration == 0:
+            count += 1
+
+    return count >= threshold
 
 
-def is_consulting_only(candidate: dict, consulting_firms: set) -> bool:
-    """Every company in career history is a consulting firm."""
-    raise NotImplementedError
+def is_consulting_only(candidate: dict,
+                       consulting_firms: set) -> bool:
+    """
+    Every company in career history belongs to consulting.
+    """
+
+    companies = []
+
+    for exp in candidate.get("career_history", []):
+
+        company = exp.get("company", "").strip().lower()
+
+        if company:
+            companies.append(company)
+
+    if not companies:
+        return False
+
+    return all(company in consulting_firms for company in companies)
 
 
 def cannot_relocate(candidate: dict) -> bool:
-    """country != 'India' AND willing_to_relocate == False."""
-    raise NotImplementedError
+
+    country = candidate.get("country", "").strip().lower()
+
+    willing = candidate.get(
+        "willing_to_relocate",
+        True
+    )
+
+    return country != "india" and not willing
 
 
-def is_buzzword_stuffer(candidate: dict, non_eng_titles: set, ai_terms: set) -> bool:
-    """Non-engineering current/primary title but claims core AI skills."""
-    raise NotImplementedError
+def is_buzzword_stuffer(candidate: dict,
+                        non_eng_titles: set,
+                        ai_terms: set) -> bool:
+    """
+    Marketing/HR/Sales/etc title + AI skills.
+    """
+
+    title = candidate.get(
+        "headline",
+        ""
+    ).lower()
+
+    title_is_non_eng = any(
+        term in title
+        for term in non_eng_titles
+    )
+
+    if not title_is_non_eng:
+        return False
+
+    skill_text = " ".join(
+        skill.get("name", "").lower()
+        for skill in candidate.get("skills", [])
+    )
+
+    claims_ai = any(
+        term in skill_text
+        for term in ai_terms
+    )
+
+    return claims_ai
 
 
-def is_disqualified(candidate: dict, constants=None) -> "tuple[bool, str]":
-    """Master gate. Returns (True, reason) if the candidate must score 0."""
-    raise NotImplementedError
+def is_disqualified(candidate: dict,
+                    constants=None) -> tuple[bool, str]:
+    """
+    Master gate.
+    """
+
+    if is_honeypot_company_founding(
+            candidate,
+            COMPANY_FOUNDED):
+        return True, "honeypot_company"
+
+    if is_honeypot_zero_duration_expert(candidate):
+        return True, "fake_expert"
+
+    if is_consulting_only(
+            candidate,
+            CONSULTING_COMPANIES):
+        return True, "consulting_only"
+
+    if cannot_relocate(candidate):
+        return True, "cannot_relocate"
+
+    if is_buzzword_stuffer(
+            candidate,
+            NON_ENGINEERING_TITLES,
+            AI_SKILL_TERMS):
+        return True, "buzzword_stuffer"
+
+    return False, ""
