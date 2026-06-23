@@ -1,0 +1,55 @@
+# ============================================================
+# Feature weights & thresholds — tune here, no magic numbers in code.
+# Loaded by src/rank.py. See implementation_plan.md for rationale.
+# ============================================================
+
+# --- Feature weights (should sum to ~1.0). Embeddings are ONE feature, not the spine. ---
+feature_weights:
+  title_role_match:      0.22
+  career_evidence:       0.20
+  embedding_similarity:  0.18
+  experience_fit:        0.12
+  product_vs_services:   0.10
+  skill_trust:           0.08
+  assessment_bonus:      0.05
+  writes_code_recently:  0.05
+
+# --- Thresholds used by filters / features / penalties ---
+thresholds:
+  ideal_exp_min: 5
+  ideal_exp_max: 9
+  zero_duration_expert_limit: 3        # >=3 expert skills w/ duration 0 => honeypot
+  title_chaser_min_jobs: 4
+  title_chaser_min_short_tenures: 3
+  title_chaser_short_tenure_months: 20
+  skill_min_duration_months: 6         # discount skills shorter than this
+  langchain_recent_months: 12
+
+# --- JD-specific soft penalties (multipliers applied to feature score) ---
+penalties:
+  title_chaser:          0.75
+  langchain_only:        0.70
+  cv_speech_robotics:    0.65
+  research_only:         0.60
+
+# --- Behavioral multiplier bounds & knobs ---
+behavioral:
+  min_multiplier: 0.50
+  max_multiplier: 1.10
+  response_rate_floor: 0.10            # below this => heavy down-weight
+  recency_half_life_months: 9          # decay scale for last_active
+  open_to_work_bonus: 0.05
+  short_notice_days: 30
+  short_notice_bonus: 0.05
+
+# --- Known young companies (start_date before founding => honeypot) ---
+# Mirrors src/utils/constants.COMPANY_FOUNDED; keep in sync or load from here.
+company_founded:
+  krutrim: 2023
+  sarvam: 2023
+  sarvam ai: 2023
+
+# --- Output ---
+output:
+  top_k: 100
+  score_decimals: 4
