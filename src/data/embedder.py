@@ -39,35 +39,108 @@ def cache_model() -> None:
 
 
 def load_model():
-    """Load from the local cache (offline-safe); fall back to hub only if missing."""
+    """
+    Load model from local cache.
+
+    Offline-safe during rank.py execution.
+    Falls back to hub only if cache is missing.
+    """
+
     from sentence_transformers import SentenceTransformer
 
     if MODEL_DIR.exists() and any(MODEL_DIR.iterdir()):
-        os.environ.setdefault("HF_HUB_OFFLINE", "1")
-        os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
-        return SentenceTransformer(str(MODEL_DIR), device="cpu")
 
-    print(f"[embedder] WARNING: local cache {MODEL_DIR} empty; loading from hub.")
-    return SentenceTransformer(MODEL_NAME, device="cpu")
+        os.environ["HF_HUB_OFFLINE"] = "1"
+        os.environ["TRANSFORMERS_OFFLINE"] = "1"
 
+        return SentenceTransformer(
+            str(MODEL_DIR),
+            device="cpu"
+        )
 
-def embed_texts(model, texts, batch_size: int = 256):
-    """Encode strings to a (N, 384) float32 numpy array, L2-normalized (cosine == dot)."""
-    return model.encode(
-        texts,
-        batch_size=batch_size,
-        show_progress_bar=True,
-        convert_to_numpy=True,
-        normalize_embeddings=True,
+    print(
+        f"[embedder] WARNING: local cache {MODEL_DIR} missing."
+    )
+
+    return SentenceTransformer(
+        MODEL_NAME,
+        device="cpu"
     )
 
 
+def embed_texts(
+    model,
+    texts,
+    batch_size: int = 256
+):
+    """
+    Encode strings into L2-normalized float32 vectors.
+
+    Returns
+    -------
+    np.ndarray
+        Shape (N,384), dtype float32.
+    """
+
+    import numpy as np
+    import torch
+
+    if len(texts) == 0:
+
+        dim = model.get_sentence_embedding_dimension()
+
+        return np.empty(
+            (0, dim),
+            dtype=np.float32
+        )
+
+    with torch.inference_mode():
+
+        embeddings = model.encode(
+            texts,
+            batch_size=batch_size,
+            show_progress_bar=True,
+            convert_to_numpy=True,
+            normalize_embeddings=True
+        )
+
+    return embeddings.astype(
+        np.float32,
+        copy=False
+    )
+
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Cache the embedding model into the repo.")
-    parser.add_argument("--cache", action="store_true", help="Download & cache the model.")
+
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument(
+        "--cache",
+        action="store_true"
+    )
+
     args = parser.parse_args()
+
     if args.cache:
+
         cache_model()
+
     else:
-        m = load_model()
-        print(f"[embedder] loaded OK. dim = {m.get_sentence_embedding_dimension()}")
+
+        model = load_model()
+
+        vec = embed_texts(
+            model,
+            ["hello world"]
+        )
+
+        print(
+            f"[embedder] loaded OK."
+        )
+
+        print(
+            f"dim = {vec.shape[1]}"
+        )
+
+        print(
+            f"dtype = {vec.dtype}"
+        )
