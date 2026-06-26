@@ -18,8 +18,8 @@ data/candidates.jsonl.gz
 # Uncomment the next line if you are NOT committing them via LFS:
 # artifacts/*.npy
 
-# ---- Cached model weights are large; commit via LFS or regenerate with --cache ----
-# artifacts/model/
+# ---- Cached model weights are large; regenerate with: precompute.py --cache-model ----
+artifacts/model/
 
 # ---- OS / editor ----
 .DS_Store
