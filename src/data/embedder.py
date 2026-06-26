@@ -109,42 +109,7 @@ def embed_texts(
         copy=False
     )
 
-
 if __name__ == "__main__":
-
-    parser = argparse.ArgumentParser()
-
-    parser.add_argument(
-        "--cache",
-        action="store_true"
-    )
-
-    args = parser.parse_args()
-
-    if args.cache:
-
-        cache_model()
-
-    else:
-
-        model = load_model()
-
-        vec = embed_texts(
-            model,
-            ["hello world"]
-        )
-
-        print(
-            f"[embedder] loaded OK."
-        )
-
-        print(
-            f"dim = {vec.shape[1]}"
-        )
-
-        print(
-            f"dtype = {vec.dtype}"
-        )if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
 
