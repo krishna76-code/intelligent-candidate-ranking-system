@@ -14,7 +14,8 @@ from src.data.loader import (
 from src.data.embedder import (
     cache_model,
     load_model,
-    embed_texts
+    embed_texts,
+    BGE_QUERY_PREFIX,
 )
 
 
@@ -44,6 +45,13 @@ def parse_args() -> argparse.Namespace:
         action="store_true"
     )
 
+    parser.add_argument(
+        "--batch-size",
+        type=int,
+        default=64,  # safe for bge-base on a 4GB GPU; CPU handles any size
+        help="Embedding batch size. Lower if you hit CUDA out-of-memory."
+    )
+
     return parser.parse_args()
 
 
@@ -63,8 +71,9 @@ def main() -> None:
         print("[precompute] caching model...")
         cache_model()
 
-    print("[precompute] loading model...")
-    model = load_model()
+    # OFFLINE step: use the GPU if available (allowed — only rank.py must be CPU).
+    print("[precompute] loading model (GPU if available)...")
+    model = load_model(device="auto")
 
     candidate_ids = []
     texts = []
@@ -89,7 +98,7 @@ def main() -> None:
     candidate_embeddings = embed_texts(
         model=model,
         texts=texts,
-        batch_size=256
+        batch_size=args.batch_size  # default 64: fits bge-base in 4GB VRAM; raise on bigger GPUs
     )
 
     candidate_embeddings = candidate_embeddings.astype(
@@ -117,9 +126,11 @@ def main() -> None:
 
         jd_text = f.read()
 
+    # The JD is the QUERY -> prefix it so BGE retrieval scores against documents
+    # correctly. Candidate blobs are documents and are embedded without a prefix.
     jd_embedding = embed_texts(
         model=model,
-        texts=[jd_text]
+        texts=[BGE_QUERY_PREFIX + jd_text]
     )
 
     jd_embedding = jd_embedding.astype(

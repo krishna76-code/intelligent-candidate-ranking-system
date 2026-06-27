@@ -47,8 +47,8 @@ def test_exactly_100_rows_and_correct_columns(submission_csv):
         
     assert len(reader) > 0, "CSV is completely empty."
     
-    # 1. Check exact column headers
-    expected_headers = {"candidate_id", "score", "reasoning"}
+    # 1. Check exact column headers (spec requires candidate_id,rank,score,reasoning)
+    expected_headers = {"candidate_id", "rank", "score", "reasoning"}
     actual_headers = set(reader[0].keys())
     assert actual_headers == expected_headers, f"Expected headers {expected_headers}, got {actual_headers}"
     

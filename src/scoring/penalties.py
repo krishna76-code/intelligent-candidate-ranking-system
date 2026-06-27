@@ -42,11 +42,22 @@ def is_langchain_only(candidate: dict) -> bool:
     text_corpus = " ".join(skills + [f"{job.get('title', '')} {job.get('description', '')}".lower() for job in history])
     
     wrapper_terms = {"langchain", "llamaindex", "openai api", "chatgpt"}
-    foundational_terms = {"pytorch", "tensorflow", "scikit-learn", "keras", "bert", "word2vec", "pandas", "numpy", "gradient boosting", "transformer"}
-    
+    # Foundational = evidence of real pre-LLM ML, not just framework wrappers.
+    # Expanded so classic ML signals (bm25, cnn, lstm, xgboost, collaborative
+    # filtering, ...) count — a real ML engineer who happens to list llamaindex
+    # should NOT be flagged as a "LangChain tutorial" person.
+    foundational_terms = {
+        "pytorch", "tensorflow", "scikit-learn", "sklearn", "keras", "bert",
+        "word2vec", "pandas", "numpy", "gradient boosting", "transformer",
+        "bm25", "cnn", "rnn", "lstm", "gru", "xgboost", "lightgbm", "catboost",
+        "random forest", "svm", "collaborative filtering", "matrix factorization",
+        "prophet", "clustering", "logistic regression", "feature engineering",
+        "faiss", "annoy", "hnsw", "learning to rank", "ltr",
+    }
+
     has_wrappers = any(w in text_corpus for w in wrapper_terms)
     has_foundations = any(f in text_corpus for f in foundational_terms)
-    
+
     return has_wrappers and not has_foundations
 
 

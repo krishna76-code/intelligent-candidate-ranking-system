@@ -5,9 +5,15 @@
 
 # --- Feature weights (should sum to ~1.0). Embeddings are ONE feature, not the spine. ---
 feature_weights:
-  title_role_match:      0.22
-  career_evidence:       0.20
-  embedding_similarity:  0.18
+  # Embedding at 0.14 — middle ground between the original 0.18 and the
+  # down-weighted 0.10. Rationale: on this synthetic/templated dataset embeddings
+  # barely separate strong from weak (~0.007 gap), so a little weight shifts to the
+  # discriminating features (title + career_evidence); but we keep embeddings
+  # meaningful (0.14, not 0.10) so the system still GENERALIZES to unseen/real data
+  # where semantic matching carries real signal. The freed 0.04 split to title/career.
+  title_role_match:      0.24
+  career_evidence:       0.22
+  embedding_similarity:  0.14
   experience_fit:        0.12
   product_vs_services:   0.10
   skill_trust:           0.08
