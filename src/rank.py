@@ -156,14 +156,20 @@ def main() -> None:
         final_score = feat * pen_mult * beh_mult
         ranked.append({
             "candidate": candidate,
-            # Round to the SAME precision we write to the CSV, so the sort's
-            # tie-break agrees with the validator (two raw floats can differ in
-            # the 5th decimal yet round to the same 4-decimal score).
-            "score": round(final_score, 4),
+            "raw_score": final_score,
             "breakdown": breakdown,
             "penalties": pen_reasons,
             "behavioral": beh_breakdown,
         })
+
+    # Normalize scores into a clean [0, 1] range. The behavioral multiplier can
+    # reach 1.1, so a raw final score can slightly exceed 1.0; dividing by the max
+    # raw score rescales everything to <=1.0 WITHOUT changing the ranking order
+    # (it's a monotonic transform). Then round to the precision we write, so the
+    # sort tie-break agrees with the validator.
+    max_raw = max((e["raw_score"] for e in ranked), default=1.0) or 1.0
+    for e in ranked:
+        e["score"] = round(e["raw_score"] / max_raw, 4)
 
     # 6. Sort: score DESC, ties by candidate_id ASC (matches the validator)
     ranked.sort(key=lambda x: (-x["score"], str(x["candidate"].get("candidate_id", ""))))

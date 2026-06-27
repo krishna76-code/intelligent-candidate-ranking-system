@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import math
+
+
 def title_role_match(candidate: dict) -> float:
     """
     Evaluates alignment of current/recent title to confirm it is an ML/AI/DS/Eng role.
@@ -17,8 +20,16 @@ def title_role_match(candidate: dict) -> float:
     if not title:
         return 0.0
         
-    # Define semantic keyword segments
-    ai_ml_keywords = {"ai", "ml", "nlp", "llm", "deep learning", "machine learning", "data scientist", "data science", "retrieval", "computer vision"}
+    # Define semantic keyword segments.
+    # Includes retrieval/ranking/recommendation/search terms because the JD's core
+    # mandate is "ranking, retrieval, and matching systems" — a "Recommendation
+    # Systems Engineer" or "Search Engineer" is a bullseye fit, not a generic eng.
+    ai_ml_keywords = {
+        "ai", "ml", "nlp", "llm", "deep learning", "machine learning",
+        "data scientist", "data science", "retrieval", "computer vision",
+        "recommendation", "recommender", "search", "ranking", "relevance",
+        "personalization", "information retrieval",
+    }
     eng_keywords = {"engineer", "developer", "scientist", "cto", "founder", "architect", "programmer"}
     management_non_tech = {"marketing", "sales", "hr", "recruiter", "product manager", "pm", "designer", "operations", "account executive"}
 
@@ -39,25 +50,55 @@ def title_role_match(candidate: dict) -> float:
         
     return 0.1
 
+# Terms that are the JD's CORE mandate (ranking/retrieval/recommendation/IR/NLP) —
+# worth more than generic ones like "search" or "embeddings" that appear loosely.
+_CORE_EVIDENCE_TERMS = {
+    "retrieval", "ranking", "rank", "recommendation", "recommender",
+    "information retrieval", "learning to rank", "relevance", "nlp",
+    "natural language", "semantic search", "reranking", "dense retrieval",
+}
+
+
 def career_evidence(candidate: dict, retrieval_terms: set) -> float:
     """
-    Evaluates the presence of target domains (retrieval/ranking/search/recommendation/NLP) 
-    across historical descriptions and job titles.
+    Depth-aware evidence that the candidate's actual work matches the JD's domain
+    (retrieval / ranking / recommendation / search / NLP).
+
+    Improved over the old "count matching jobs / 3" (which gave only 4 chunky values
+    and ignored depth). Now we:
+      1. Count DISTINCT relevant terms across all jobs (depth, not yes/no per job).
+      2. Weight CORE terms (ranking/retrieval/recommendation/IR/NLP) 2x vs generic
+         ones (search/embeddings/vector-db names).
+      3. Pass the weighted hit count through a smooth SATURATING curve so the score
+         is continuous (fewer ties -> finer ordering where NDCG@10/50 lives), while
+         still capping at 1.0 so keyword spamming can't run away.
     """
     history = candidate.get("career_history", [])
     if not history:
         return 0.0
-        
-    match_count = 0
+
     clean_terms = {str(t).lower() for t in retrieval_terms}
-    
+
+    # Distinct terms seen across the whole career (set -> depth without double-count
+    # of the same templated phrase repeated across jobs).
+    distinct_core = set()
+    distinct_generic = set()
     for job in history:
         text = f"{job.get('title', '')} {job.get('description', '')}".lower()
-        if any(term in text for term in clean_terms):
-            match_count += 1
-            
-    # Scale density score linearly up to a high confidence baseline of 3 matching roles
-    return min(1.0, match_count / 3.0)
+        for term in clean_terms:
+            if term in text:
+                if term in _CORE_EVIDENCE_TERMS:
+                    distinct_core.add(term)
+                else:
+                    distinct_generic.add(term)
+
+    # Weighted evidence: core terms count double, generic terms count single.
+    weighted_hits = 2.0 * len(distinct_core) + 1.0 * len(distinct_generic)
+
+    # Smooth saturating curve: 1 - exp(-hits / k). k=3 means ~1 strong core+generic
+    # mix already lifts the score meaningfully, and it saturates toward 1.0.
+    k = 3.0
+    return float(1.0 - math.exp(-weighted_hits / k))
 
 def experience_fit(candidate: dict, ideal_min: float = 5, ideal_max: float = 9) -> float:
     """

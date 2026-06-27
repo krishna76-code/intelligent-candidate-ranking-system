@@ -19,12 +19,14 @@ python -m venv .venv
 pip install torch --index-url https://download.pytorch.org/whl/cpu
 pip install -r requirements.txt
 
-# 2. (offline, once) cache the model + build embeddings — NO time limit
-python -m src.data.embedder --cache
-python src/precompute.py --candidates ./data/candidates.jsonl
+# 2. (offline, once) build embeddings — NO time limit. Skipped if artifacts/*.npy
+#    are already present (they are committed via Git LFS). Use --cache-model the
+#    first time to download the embedding model. GPU optional (speeds it up).
+python -m src.precompute --candidates ./data/candidates.jsonl --cache-model
 
-# 3. Produce the submission CSV — CPU, no network, <=5 min
-python src/rank.py --candidates ./data/candidates.jsonl --out ./output/<participant_id>.csv
+# 3. Produce the submission CSV — CPU, no network, <=5 min.
+#    NOTE: run as a MODULE (-m), not "python src/rank.py", so package imports resolve.
+python -m src.rank --candidates ./data/candidates.jsonl --out ./output/<participant_id>.csv
 
 # 4. Validate before uploading
 python scripts/validate_submission.py ./output/<participant_id>.csv

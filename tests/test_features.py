@@ -8,10 +8,11 @@ behaves sensibly (strong ML candidate > weak/keyword candidate).
 import pytest
 
 from src.scoring.features import (
-    feature_score, 
-    experience_fit, 
-    assessment_bonus, 
-    title_role_match
+    feature_score,
+    experience_fit,
+    assessment_bonus,
+    title_role_match,
+    career_evidence,
 )
 
 class MockConstants:
@@ -138,7 +139,56 @@ def test_strong_ml_vs_keyword_stuffer():
     
     strong_score, _ = feature_score(strong_candidate, 0.80, MOCK_WEIGHTS, MockConstants())
     stuffer_score, _ = feature_score(stuffer_candidate, 0.80, MOCK_WEIGHTS, MockConstants())
-    
-    # The scoring matrix should decisively favor the real engineer, 
+
+    # The scoring matrix should decisively favor the real engineer,
     # even if embedding similarity is identical and they both claim the same skills.
     assert strong_score > stuffer_score + 0.3
+
+
+# --------------------------------------------------------------------------- #
+# career_evidence — depth-aware, continuous, capped
+# --------------------------------------------------------------------------- #
+TERMS = {"nlp", "retrieval", "ranking", "search", "recommendation",
+         "embeddings", "vector database", "relevance", "reranking"}
+
+
+def _hist(*descriptions):
+    return {"career_history": [{"title": "", "description": d} for d in descriptions]}
+
+
+def test_career_evidence_empty_is_zero():
+    assert career_evidence({"career_history": []}, TERMS) == 0.0
+    assert career_evidence(_hist("managed marketing budgets"), TERMS) == 0.0
+
+
+def test_career_evidence_bounded_0_1():
+    deep = _hist("ranking retrieval recommendation relevance reranking nlp search embeddings")
+    s = career_evidence(deep, TERMS)
+    assert 0.0 <= s <= 1.0
+
+
+def test_career_evidence_depth_monotonic():
+    # more relevant terms -> higher (or equal) score
+    one = career_evidence(_hist("built a ranking system"), TERMS)
+    two = career_evidence(_hist("built ranking and retrieval systems"), TERMS)
+    three = career_evidence(_hist("ranking, retrieval, and recommendation systems"), TERMS)
+    assert one < two < three
+
+
+def test_career_evidence_core_outweighs_generic():
+    # a CORE term (ranking) should score higher than a GENERIC one (search) alone
+    core = career_evidence(_hist("owned the ranking layer"), TERMS)
+    generic = career_evidence(_hist("built a search box"), TERMS)
+    assert core > generic
+
+
+def test_career_evidence_not_chunky():
+    # the old version returned only {0, .33, .66, 1.0}; new one should produce
+    # values OUTSIDE that set (proving it's continuous)
+    chunky = {0.0, 1/3, 2/3, 1.0}
+    samples = [
+        career_evidence(_hist("ranking"), TERMS),
+        career_evidence(_hist("search"), TERMS),
+        career_evidence(_hist("ranking retrieval"), TERMS),
+    ]
+    assert any(round(s, 4) not in {round(c, 4) for c in chunky} for s in samples)

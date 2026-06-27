@@ -15,9 +15,9 @@ __pycache__/
 data/candidates.jsonl
 data/candidates.jsonl.gz
 
-# ---- Embeddings: use Git LFS for these, OR regenerate via precompute.py ----
-# Uncomment the next line if you are NOT committing them via LFS:
-# artifacts/*.npy
+# ---- Embeddings: COMMITTED via Git LFS (see .gitattributes) ----
+# artifacts/*.npy are tracked by LFS so judges get them directly at test time.
+# (They can also be regenerated with precompute.py if needed.)
 
 # ---- Cached model weights are large; regenerate with: precompute.py --cache-model ----
 artifacts/model/

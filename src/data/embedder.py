@@ -20,8 +20,13 @@ import argparse
 import os
 from pathlib import Path
 
-# Small, fast on CPU, 384-dim. The plan standardized on this.
-MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
+# BGE-base: 768-dim, top retrieval quality (the JD names "BGE, E5"). The model
+# only runs OFFLINE during precompute; rank.py loads the saved .npy vectors only.
+# Note: on a 4GB GPU use a small batch (~32-64) to avoid CUDA OOM.
+MODEL_NAME = "BAAI/bge-base-en-v1.5"
+
+# BGE retrieval works best when the QUERY (the JD) is prefixed; documents are not.
+BGE_QUERY_PREFIX = "Represent this sentence for searching relevant passages: "
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 MODEL_DIR = REPO_ROOT / "artifacts" / "model"
@@ -38,24 +43,48 @@ def cache_model() -> None:
     print(f"[embedder] cached to {MODEL_DIR}")
 
 
-def load_model():
+def _resolve_device(device: str | None) -> str:
+    """
+    Pick the compute device.
+      - None / "auto" -> use GPU if available, else CPU (good for OFFLINE precompute)
+      - "cpu"         -> force CPU (rank.py uses this — the graded step is CPU-only)
+      - "cuda"        -> force GPU
+    """
+    if device in ("cpu", "cuda"):
+        return device
+    try:
+        import torch
+        if torch.cuda.is_available():
+            return "cuda"
+    except Exception:
+        pass
+    return "cpu"
+
+
+def load_model(device: str | None = "cpu"):
     """
     Load model from local cache.
 
-    Offline-safe during rank.py execution.
-    Falls back to hub only if cache is missing.
+    device: "cpu" (default, used by rank.py — graded step is CPU-only),
+            "cuda" to force GPU, or "auto"/None to use GPU if available
+            (precompute.py passes "auto" to speed up the offline embedding).
+
+    Offline-safe. Falls back to hub only if the local cache is missing.
     """
 
     from sentence_transformers import SentenceTransformer
+
+    dev = _resolve_device(device)
 
     if MODEL_DIR.exists() and any(MODEL_DIR.iterdir()):
 
         os.environ["HF_HUB_OFFLINE"] = "1"
         os.environ["TRANSFORMERS_OFFLINE"] = "1"
 
+        print(f"[embedder] loading cached model on device={dev}")
         return SentenceTransformer(
             str(MODEL_DIR),
-            device="cpu"
+            device=dev
         )
 
     print(
@@ -64,7 +93,7 @@ def load_model():
 
     return SentenceTransformer(
         MODEL_NAME,
-        device="cpu"
+        device=dev
     )
 
 
