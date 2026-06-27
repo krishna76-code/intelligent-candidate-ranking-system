@@ -1,0 +1,30 @@
+{
+  "_comment": "Hand-labeled evaluation set. relevance: 3=clear strong fit, 2=decent, 0=clear non-fit. We (human) assigned these by reading the real profiles. Used ONLY to check the ranker's ordering — NOT to train it (no leakage).",
+  "labels": [
+    {"candidate_id": "CAND_0000031", "relevance": 3, "why": "Recommendation Systems Engineer, 6yr, retrieval/ranking work"},
+    {"candidate_id": "CAND_0000981", "relevance": 3, "why": "ML Engineer 6.4yr with retrieval evidence"},
+    {"candidate_id": "CAND_0001131", "relevance": 3, "why": "ML Engineer 5.8yr, in-band, real ML"},
+    {"candidate_id": "CAND_0002025", "relevance": 3, "why": "Senior AI Engineer 5.9yr"},
+    {"candidate_id": "CAND_0002120", "relevance": 3, "why": "ML Engineer 6.5yr"},
+    {"candidate_id": "CAND_0003557", "relevance": 3, "why": "ML Engineer 6.8yr"},
+    {"candidate_id": "CAND_0003791", "relevance": 3, "why": "ML Engineer 6.6yr"},
+    {"candidate_id": "CAND_0000273", "relevance": 2, "why": "ML Engineer 5.8yr but hedged descriptions (behavioral-twin-ish)"},
+    {"candidate_id": "CAND_0001151", "relevance": 2, "why": "Junior ML Engineer 5yr - decent but junior-titled"},
+    {"candidate_id": "CAND_0002037", "relevance": 2, "why": "ML Engineer 5.5yr"},
+    {"candidate_id": "CAND_0003841", "relevance": 2, "why": "ML Engineer 5.0yr, edge of band"},
+    {"candidate_id": "CAND_0004131", "relevance": 2, "why": "Junior ML Engineer 6.8yr"},
+    {"candidate_id": "CAND_0000004", "relevance": 0, "why": "Marketing Manager - buzzword stuffer"},
+    {"candidate_id": "CAND_0000005", "relevance": 0, "why": "Accountant - non-eng"},
+    {"candidate_id": "CAND_0000024", "relevance": 0, "why": "HR Manager - non-eng"},
+    {"candidate_id": "CAND_0000026", "relevance": 0, "why": "Graphic Designer - non-eng"},
+    {"candidate_id": "CAND_0000030", "relevance": 0, "why": "Marketing Manager - non-eng"},
+    {"candidate_id": "CAND_0000033", "relevance": 0, "why": "Graphic Designer - non-eng"},
+    {"candidate_id": "CAND_0000003", "relevance": 0, "why": "Customer Support, consulting-only, 1.1yr"},
+    {"candidate_id": "CAND_0000008", "relevance": 0, "why": "Operations Manager, consulting-only"},
+    {"candidate_id": "CAND_0000028", "relevance": 0, "why": "Operations Manager, consulting-only, 1.1yr"},
+    {"candidate_id": "CAND_0000047", "relevance": 0, "why": "Project Manager, consulting-only"},
+    {"candidate_id": "CAND_0000056", "relevance": 0, "why": "Frontend Engineer, consulting-only, 1.3yr - not AI"},
+    {"candidate_id": "CAND_0000016", "relevance": 0, "why": "Accountant - non-eng"},
+    {"candidate_id": "CAND_0000017", "relevance": 0, "why": "Accountant - non-eng"}
+  ]
+}
