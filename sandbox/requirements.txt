@@ -1,8 +1,9 @@
 # Sandbox-specific deps (Streamlit Cloud / HF Spaces reads this).
-# Keep minimal — the demo only ranks a small sample on CPU.
+# The demo embeds a SMALL sample (<=100) live on CPU, so it needs the model libs.
+# On Streamlit Cloud the default torch wheel works; for a lighter CPU-only build
+# you can add an extra index (see sandbox/README.md).
 streamlit>=1.31,<1.40
 numpy>=1.26,<2.2
-pandas>=2.1,<2.3
 sentence-transformers>=2.7,<3.1
 torch>=2.2,<2.6
 scikit-learn>=1.3,<1.6
