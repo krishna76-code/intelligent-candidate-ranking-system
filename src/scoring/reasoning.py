@@ -11,6 +11,8 @@ This is the Stage-4 make-or-break. The organizer validator/reviewer PENALIZES:
 
 from __future__ import annotations
 
+import hashlib
+
 
 def build_reasoning(candidate: dict, rank: int, feature_breakdown: dict,
                     penalties=None, behavioral=None) -> str:
@@ -88,8 +90,10 @@ def build_reasoning(candidate: dict, rank: int, feature_breakdown: dict,
         bonuses.append("active open-to-work status confirms immediate reachability")
 
     # 5. Assemble the Reasoning String Structurally
-    # Use a deterministic hash to rotate through sentence structures so the CSV doesn't look templated
-    hash_val = hash(c_id) % 3
+    # Rotate sentence structures so the CSV doesn't look templated. Use hashlib
+    # (NOT the builtin hash(), which is randomized per-process) so the same
+    # candidate always gets the same phrasing -> reproducible across runs.
+    hash_val = int(hashlib.md5(str(c_id).encode()).hexdigest(), 16) % 3
     s1_core = feat_narratives.get(top_feat, feat_narratives["title_role_match"])
 
     if hash_val == 0:

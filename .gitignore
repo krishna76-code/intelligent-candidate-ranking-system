@@ -34,3 +34,6 @@ output/*.csv
 # ---- Temp ----
 *.log
 *.tmp
+
+# accidental codebase dump
+full_codebase.txt
