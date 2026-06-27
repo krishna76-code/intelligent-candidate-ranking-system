@@ -34,8 +34,11 @@ ENG_TITLE_TERMS = {
 
 # Disqualifying title terms for middle-management oversight or non-technical domains
 NON_ENG_TITLE_TERMS = {
-    "marketing", "sales", "hr", "recruiter", "product manager", "pm", "designer", 
-    "accountant", "operations manager", "scrum master", "agile coach", "analyst"
+    "marketing", "sales", "hr", "recruiter", "product manager", "pm", "designer",
+    "accountant", "operations manager", "scrum master", "agile coach", "analyst",
+    # additional non-engineering current titles present in the dataset
+    "content writer", "customer support", "graphic designer", "civil engineer",
+    "mechanical engineer", "project manager", "business analyst",
 }
 
 # Critical information retrieval and applied AI keywords matching the JD core infrastructure
@@ -50,3 +53,23 @@ CV_SPEECH_ROBOTICS_TERMS = {
     "computer vision", "cv", "image classification", "object detection", "yolo", "opencv",
     "speech recognition", "asr", "tts", "text-to-speech", "robotics", "ros", "slam"
 }
+
+# ---------------------------------------------------------------------------
+# Backwards-compatible aliases for hard_filters.py (merged earlier).
+# constants.py was later rewritten with new names; we re-expose the originals.
+#
+# NON_ENG_TITLES: same set of non-engineering title terms.
+# AI_SKILL_TERMS: the buzzword-stuffer filter checks whether a non-eng-title
+#   candidate lists *any* AI skill. CORE_AI_SKILLS is retrieval-focused and
+#   omits the common skills stuffers actually paste (PyTorch, NLP, LLM, ...),
+#   so we union it with those to keep catching them (verified: this restores
+#   stuffer detection from ~2,357 back to ~5,323 on the real 100K pool).
+# ---------------------------------------------------------------------------
+NON_ENG_TITLES = NON_ENG_TITLE_TERMS
+
+COMMON_AI_SKILLS = {
+    "pytorch", "tensorflow", "keras", "scikit-learn", "nlp", "llm", "llms",
+    "machine learning", "deep learning", "transformers", "fine-tuning llms",
+    "rag", "langchain", "huggingface", "computer vision", "neural networks",
+}
+AI_SKILL_TERMS = CORE_AI_SKILLS | COMMON_AI_SKILLS
