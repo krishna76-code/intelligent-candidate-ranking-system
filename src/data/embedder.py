@@ -76,8 +76,17 @@ def load_model(device: str | None = "cpu"):
 
     dev = _resolve_device(device)
 
-    if MODEL_DIR.exists() and any(MODEL_DIR.iterdir()):
+    # A cached model must contain actual weights — not just a .gitkeep placeholder.
+    # (On hosted deploys the repo may ship an empty artifacts/model/ with only
+    # .gitkeep; treating that as "cached" would force OFFLINE mode and crash. In
+    # that case we fall through and download from the hub instead.)
+    has_weights = MODEL_DIR.exists() and (
+        (MODEL_DIR / "model.safetensors").exists()
+        or (MODEL_DIR / "pytorch_model.bin").exists()
+        or (MODEL_DIR / "config.json").exists()
+    )
 
+    if has_weights:
         os.environ["HF_HUB_OFFLINE"] = "1"
         os.environ["TRANSFORMERS_OFFLINE"] = "1"
 
@@ -87,10 +96,8 @@ def load_model(device: str | None = "cpu"):
             device=dev
         )
 
-    print(
-        f"[embedder] WARNING: local cache {MODEL_DIR} missing."
-    )
-
+    # No local weights (e.g. fresh cloud clone) -> download from the hub.
+    print(f"[embedder] no cached weights in {MODEL_DIR}; downloading {MODEL_NAME} ...")
     return SentenceTransformer(
         MODEL_NAME,
         device=dev
