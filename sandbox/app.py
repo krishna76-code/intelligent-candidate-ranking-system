@@ -141,33 +141,35 @@ st.set_page_config(page_title="Redrob Candidate Ranker", layout="wide")
 st.markdown(
     """
     <style>
-    /* Dark, cohesive palette: slate surfaces + teal/indigo accents */
+    /* Dark emerald palette: deep teal-slate surfaces + emerald/mint accents */
     .main-title {
-        font-size: 2.1rem; font-weight: 800; margin-bottom: 0.15rem;
-        color: #f1f5f9; letter-spacing: -0.01em;
+        font-size: 2.2rem; font-weight: 800; margin-bottom: 0.15rem;
+        color: #f0faf6; letter-spacing: -0.01em;
     }
     .accent-bar {
-        height: 3px; width: 64px; border-radius: 3px; margin-bottom: 0.9rem;
-        background: linear-gradient(90deg, #5eead4 0%, #6366f1 100%);
+        height: 3px; width: 72px; border-radius: 3px; margin-bottom: 0.9rem;
+        background: linear-gradient(90deg, #10b981 0%, #6ee7b7 100%);
     }
-    .subtitle { color: #94a3b8; font-size: 1.0rem; margin-bottom: 1.4rem; line-height: 1.5; }
+    .subtitle { color: #94b3ac; font-size: 1.02rem; margin-bottom: 1.2rem; line-height: 1.55; }
     .card {
-        border: 1px solid #334155; border-left: 3px solid #5eead4;
+        border: 1px solid #24404a; border-left: 3px solid #10b981;
         border-radius: 12px; padding: 14px 18px; margin-bottom: 12px;
-        background: #1e293b;
+        background: #13232e;
     }
     .rank-badge {
-        background: #5eead4; color: #0f172a; border-radius: 999px;
+        background: #10b981; color: #05130d; border-radius: 999px;
         padding: 2px 12px; font-weight: 800; font-size: 0.85rem;
     }
-    .cand-name { color: #f1f5f9; font-weight: 700; }
-    .score { color: #5eead4; font-weight: 600; font-size: 0.9rem; }
-    .muted { color: #94a3b8; font-size: 0.9rem; }
+    .cand-name { color: #f0faf6; font-weight: 700; font-size: 1.02rem; }
+    .score { color: #6ee7b7; font-weight: 700; font-size: 0.9rem; }
+    .muted { color: #9fbdb5; font-size: 0.9rem; }
     .pill {
-        display: inline-block; background: #312e81; color: #c7d2fe;
+        display: inline-block; background: #0f3d31; color: #a7f3d0;
         border-radius: 8px; padding: 2px 10px; font-size: 0.78rem;
-        margin: 4px 6px 2px 0; border: 1px solid #4338ca;
+        margin: 4px 6px 2px 0; border: 1px solid #10b981;
     }
+    /* metric numbers in emerald */
+    div[data-testid="stMetricValue"] { color: #6ee7b7; }
     </style>
     """,
     unsafe_allow_html=True,
@@ -182,16 +184,16 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-with st.sidebar:
-    st.header("How it works")
+# "How it works" moved inline as a collapsed panel (was crowding the sidebar).
+with st.expander("How it works"):
     st.markdown(
         "- **Filters** drop honeypots, consulting-only, can't-relocate, stuffers\n"
         "- **8 weighted features** score the survivors (title, career evidence, "
         "embeddings, experience, product-vs-services, skill trust, assessments, recency-of-code)\n"
         "- **Behavioral multiplier** weights reachability (response rate, recency)\n"
-        "- Embeddings: `bge-base-en-v1.5`, computed live for your sample (CPU)"
+        "- Embeddings: `bge-base-en-v1.5`, computed live for your sample (CPU)\n"
+        f"- Sample is capped at {MAX_CANDIDATES} candidates (sandbox spec)"
     )
-    st.caption(f"Sample is capped at {MAX_CANDIDATES} candidates (sandbox spec).")
 
 st.subheader("1. Choose candidates")
 col1, col2 = st.columns([2, 1])

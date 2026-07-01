@@ -10,11 +10,11 @@ headless = true
 [browser]
 gatherUsageStats = false
 
-# Dark, aesthetic theme — slate background with a teal/indigo accent.
+# Dark emerald theme — deep teal-slate background with emerald/mint accents.
 [theme]
 base = "dark"
-primaryColor = "#5eead4"            # teal accent (buttons, highlights)
-backgroundColor = "#0f172a"         # slate-900 page background
-secondaryBackgroundColor = "#1e293b" # slate-800 cards/sidebar
-textColor = "#e2e8f0"               # slate-200 text
+primaryColor = "#10b981"            # emerald accent (buttons, highlights)
+backgroundColor = "#0b1720"         # deep teal-slate page background
+secondaryBackgroundColor = "#13232e" # slate-green cards/sidebar
+textColor = "#e6f0ee"               # mint-white text
 font = "sans serif"
