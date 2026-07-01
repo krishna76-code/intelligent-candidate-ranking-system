@@ -8,11 +8,11 @@ This plan reflects facts **verified against the real 100,000-candidate `candidat
 
 ## 1. The Core Strategy (one line)
 
-Only ~726 of 100,000 candidates even have an AI/ML title. So this is a **filtering problem first, ranking problem second**: throw out the obvious junk with cheap rules, then carefully score the few hundred real candidates with a **transparent weighted feature model** where embedding similarity is just ONE feature (~18%), not the backbone.
+Only ~726 of 100,000 candidates even have an AI/ML title. So this is a **filtering problem first, ranking problem second**: throw out the obvious junk with cheap rules, then carefully score the few hundred real candidates with a **transparent weighted feature model** where embedding similarity is just ONE feature (~14% in the final version), not the backbone.
 
 ### Why embeddings are NOT the spine
 - **80% of the grade is the top 50** (`0.50×NDCG@10 + 0.30×NDCG@50 + 0.15×MAP + 0.05×P@10`). Getting the ordering of the best ~150 people right is everything.
-- A 384-dim MiniLM cosine score **cannot reliably separate the #3 candidate from the #15** — and that's exactly where the points live.
+- We started with a 384-dim MiniLM and later upgraded to bge-base (768-dim), but even the stronger model barely separates the #3 candidate from the #15 on this templated data (measured strong-vs-weak gap ~0.04) — and that ordering is exactly where the points live. So embeddings stay a semantic tie-breaker, not the spine.
 - The dataset contains "behavioral twins": profiles stuffed with the right keywords whose own descriptions admit weakness ("production was handled by the platform team", "lighter weight than ranking systems at FAANG"). Embeddings love them; a feature scorer that reads the JD's real disqualifiers rejects them.
 - Everything must be **explainable** for the Stage-5 defend-your-work interview. "The feature weights ranked them" is defensible; "the cosine put them there" is not.
 
@@ -74,10 +74,12 @@ Submissions with **>10% honeypots in the top 100 are disqualified** at Stage 3.
 ### Phase 1 — Offline Precompute (your PC, no time limit)
 1. Read `candidates.jsonl` (100K).
 2. Per candidate, build text blob = `summary + headline + all career-history descriptions`. **NO skills list** (that's how stuffers game it).
-3. Encode with local `all-MiniLM-L6-v2` (384-dim).
-4. Save `candidate_embeddings.npy` (~150 MB).
-5. Embed the JD once → `jd_embedding.npy`.
-6. Cache model weights into the repo (so runtime needs no internet). Commit artifacts.
+3. Encode with a local sentence-transformer. Started with `all-MiniLM-L6-v2`
+   (384-dim); upgraded to `BAAI/bge-base-en-v1.5` (768-dim) for better retrieval
+   quality (the JD names BGE/E5). GPU used if available — offline, no time limit.
+4. Save `candidate_embeddings.npy` (~293 MB for bge-base) + `candidate_ids.npy`.
+5. Embed the JD once (with the BGE query prefix) → `jd_embedding.npy`.
+6. Ship the embeddings via Git LFS so the ranking step needs no model or network.
 
 ### Phase 2 — `rank.py` (≤5 min, CPU, no network)
 1. Load `candidates.jsonl` + `candidate_embeddings.npy` + `jd_embedding.npy`.
@@ -107,9 +109,9 @@ Embedding similarity is ONE input, not the boss.
 
 | Feature | Measures | Weight |
 | :--- | :--- | :--- |
-| `title_role_match` | Current/recent title is really ML/AI/DS/eng | **0.22** |
-| `career_evidence` | Descriptions mention retrieval/ranking/search/recommendation/NLP | **0.20** |
-| `embedding_similarity` | cosine(JD, career text) — coarse semantic match | **0.18** |
+| `title_role_match` | Current/recent title is really ML/AI/DS/eng | **0.24** |
+| `career_evidence` | Descriptions mention retrieval/ranking/search/recommendation/NLP | **0.22** |
+| `embedding_similarity` | cosine(JD, career text) — coarse semantic match | **0.14** |
 | `experience_fit` | 5–9 yrs ideal; soft penalty outside (JD says it's a range) | **0.12** |
 | `product_vs_services` | Bonus product companies; penalty services | **0.10** |
 | `skill_trust` | `duration_months × endorsements`, capped | **0.08** |
@@ -158,11 +160,11 @@ flowchart TD
     subgraph P1["🔵 PHASE 1 — OFFLINE PRECOMPUTE (no time limit)"]
         direction TB
         L1[Load candidates.jsonl 100K] --> L2[Text blob = summary + headline + career descriptions<br/>NO skills list]
-        L2 --> L3[Local all-MiniLM-L6-v2, cache weights]
-        L3 --> L4[Encode → 384-dim vectors]
-        L4 --> L5[Save candidate_embeddings.npy ~150MB]
-        L3 --> L6[Embed JD → jd_embedding.npy]
-        L5 --> L7[Commit artifacts to git]
+        L2 --> L3[Local bge-base-en-v1.5, cache weights]
+        L3 --> L4[Encode → 768-dim vectors]
+        L4 --> L5[Save candidate_embeddings.npy ~293MB]
+        L3 --> L6[Embed JD with query prefix → jd_embedding.npy]
+        L5 --> L7[Commit artifacts via Git LFS]
         L6 --> L7
     end
 

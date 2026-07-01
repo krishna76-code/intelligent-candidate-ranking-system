@@ -7,26 +7,29 @@
 # ============================================================================
 # Team identity
 # ============================================================================
-team_name: "your-team-name-here"  # Used in leaderboard and announcements
+team_name: "Gumnaam Badshaah"  # Used in leaderboard and announcements
 
 primary_contact:
-  name: "Full Name"
-  email: "primary@example.com"   # Used for all organizer communication
-  phone: "+91-XXXXXXXXXX"        # Used for top-50 / top-10 outreach
+  name: "Dhruv Sahu"
+  email: "sahudhruv02004@gmail.com"   # Used for all organizer communication
+  phone: "+91-9981123476"        # Used for top-50 / top-10 outreach
 
 team_members:
-  - name: "Member 1 Full Name"
-    email: "member1@example.com"
-    role: "ML Engineer"          # Optional, e.g. "Team Lead", "Backend", "Data"
-  - name: "Member 2 Full Name"
-    email: "member2@example.com"
-    role: "Data Engineer"
+  - name: "Avik Sarkar"
+    email: "avik26122@gmail.com"
+
+  - name: "Amit Choudhary"
+    email: "Choudharyamitkumar39@gmail.com"
+
+  - name: "Krishna Tiwari"
+    email: "ktiwari7665@gmail.com"
+  
   # Add more members as needed; solo participants list just one member
 
 # ============================================================================
 # Code and reproducibility
 # ============================================================================
-github_repo: "https://github.com/YOUR_USERNAME/YOUR_REPO"
+github_repo: "https://github.com/Dhruv716-stack/Intelligent-Candidate-Discovery-Ranking"
 # Required. Must be reachable. Private repos OK if you can grant organizer
 # access at Stage 3 (the email to add will be communicated then).
 
@@ -43,15 +46,15 @@ reproduce_command: "python -m src.rank --candidates ./data/candidates.jsonl --ou
 # Compute environment
 # ============================================================================
 compute:
-  platform: "MacBook Pro M2"                    # Or: "AWS EC2 c5.4xlarge", "Local Linux box", etc.
-  cpu_cores: 8                                  # Number of CPU cores used
-  ram_gb: 16                                    # Available RAM in GB
-  python_version: "3.11.4"                      # python --version
-  os: "macOS 14.2"                              # Or "Ubuntu 22.04 LTS", etc.
-  uses_gpu_for_inference: false                 # Must be false — see compute constraints
-  has_network_during_ranking: false             # Must be false — no API calls during ranking
-  pre_computation_required: false               # true if you pre-compute embeddings or train models offline
-  pre_computation_time_minutes: 0               # Approximate, if applicable
+  platform: "Local Windows laptop (AMD Ryzen 7 4800H)"   # ranking runs CPU-only
+  cpu_cores: 8                                  # 8 physical cores (16 logical)
+  ram_gb: 16                                    # 16 GB RAM
+  python_version: "3.12.10"                     # python --version
+  os: "Windows 11 Home (build 26200)"
+  uses_gpu_for_inference: false                 # ranking (rank.py) is CPU-only, no model, no GPU
+  has_network_during_ranking: false             # no API calls during ranking
+  pre_computation_required: true                # embeddings are precomputed offline (bge-base)
+  pre_computation_time_minutes: 120             # ~2h to embed 100k on a 4GB laptop GPU (offline, no limit)
 
 # ============================================================================
 # AI tools declaration
@@ -62,28 +65,39 @@ compute:
 ai_tools_used:
   - "Claude"        # e.g. for architecture discussion, code review
   - "GitHub Copilot"  # e.g. for autocomplete
+  - "Gemini"
   # Other options: "ChatGPT", "Cursor", "Gemini", "Codeium", "Other", "None"
 
 ai_usage_summary: |
-  Briefly describe how AI tools were used. Examples:
-  - "Used Claude for code review and architectural discussion. Used Copilot for autocomplete.
-     No candidate data was fed to any LLM."
-  - "Used ChatGPT to debug Python issues and Cursor for refactoring."
-  - "No AI tools used."
+  We used Claude as a pair-programming and code-review assistant throughout:
+  discussing the architecture (the filter-first design and why embeddings are one
+  feature rather than the spine), verifying data facts against the real dataset,
+  catching bugs, and drafting docstrings/README text. GitHub Copilot and Gemini
+  were used for occasional autocomplete and quick lookups. All engineering
+  decisions, weight choices, and validation were made and verified by the team.
+  No candidate data was sent to any hosted LLM at ranking time; the ranking step
+  runs fully offline on CPU.
 
 # ============================================================================
 # Approach summary (optional but recommended)
 # ============================================================================
 methodology_summary: |
-  ≤200 word summary of your approach. Strongly recommended.
-
-  Example:
-  "Rule-based ranker with explicit reasoning capture. Five scoring components
-  (skills, title+career, experience years, location, education) combined with
-  a multiplicative behavioral-signal modifier. The title component is the
-  decisive signal against keyword-stuffer traps; an endorsement-and-duration
-  trust multiplier on skills catches lazy keyword stuffing. Runtime is ~10
-  seconds for 50K candidates on CPU."
+  Filter first, rank second. Cheap, explainable hard filters remove the obvious
+  rejects (honeypots with impossible founding dates / fake "expert" skills /
+  inflated experience, consulting-only careers, candidates who cannot relocate to
+  India, and non-engineering titles claiming AI skills). Survivors are scored by a
+  transparent weighted feature model: title-role match (0.24) and career evidence
+  of retrieval/ranking/recommendation work (0.22) carry the ranking; bge-base
+  embedding similarity is one feature (0.14), not the backbone, because on this
+  templated dataset embeddings barely separate strong from weak candidates
+  (measured gap ~0.04). Remaining weights cover experience fit, product-vs-services,
+  skill trust, assessment bonus, and recency-of-code. JD-specific soft penalties
+  (title-chaser, LangChain-only, CV/speech-only, research-only) and a behavioral
+  multiplier (recruiter response rate, recency) adjust the score, which is
+  normalized to [0,1]. Embeddings are precomputed offline; the ranking step loads
+  them and runs CPU-only with no network in ~30-46s on 100k. Each row gets a
+  specific, honest reasoning string. Validated via an eyeball test, a hand-labeled
+  set, and an embedding-separation measurement.
 
 # ============================================================================
 # Declarations
@@ -92,5 +106,5 @@ declarations:
   read_submission_spec: true        # I have read submission_spec.md in full
   code_is_original_work: true       # My code is my team's original work (using AI as a tool is fine)
   no_collusion: true                # I have not coordinated my submission with other teams
-  honeypot_check_done: false        # OPTIONAL — set true if you explicitly checked for honeypots in your ranking
+  honeypot_check_done: true         # honeypot detectors in hard_filters.py; verified 0 in the top 100
   reproduction_tested: true         # I have tested that my reproduce_command runs end-to-end
