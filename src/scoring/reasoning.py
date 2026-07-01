@@ -28,7 +28,6 @@ def build_reasoning(candidate: dict, rank: int, feature_breakdown: dict,
     signals = candidate.get("redrob_signals", {})
     c_id = candidate.get("candidate_id", candidate.get("participant_id", "CAND"))
 
-    # 1. Extract Real World Evidence
     yoe = profile.get("years_of_experience", 0)
     current_title = profile.get("current_title", "AI Professional")
 
@@ -42,7 +41,6 @@ def build_reasoning(candidate: dict, rank: int, feature_breakdown: dict,
     valid_skills = [s.get("name") for s in skills if float(s.get("duration_months", 0)) >= 12.0]
     top_skill = valid_skills[0] if valid_skills else "machine learning architecture"
 
-    # 2. Identify Top Scoring Strengths
     sorted_feats = sorted(feature_breakdown.items(), key=lambda x: float(x[1]), reverse=True)
     top_feat = sorted_feats[0][0] if sorted_feats else "title_role_match"
     second_feat = sorted_feats[1][0] if len(sorted_feats) > 1 else "experience_fit"
@@ -59,10 +57,8 @@ def build_reasoning(candidate: dict, rank: int, feature_breakdown: dict,
         "experience_fit": f"sits securely in the optimal experience band with {yoe} years of applied practice"
     }
 
-    # 3. Identify JD-Specific Risks and Penalties
+    # Turn the applied JD penalties into honest, human risk statements.
     risks = []
-    
-    # Check explicit penalties
     if isinstance(penalties, list):
         if any("title_chaser" in p for p in penalties):
             risks.append("frequent job hopping presents a severe retention risk for a foundational team")
@@ -73,7 +69,6 @@ def build_reasoning(candidate: dict, rank: int, feature_breakdown: dict,
         if any("research_only" in p for p in penalties):
             risks.append("the highly academic profile lacks explicit evidence of shipping user-facing products at scale")
 
-    # Check behavioral friction
     resp_rate = float(signals.get("recruiter_response_rate", 1.0))
     if resp_rate < 0.20:
         risks.append(f"a severe {int(resp_rate * 100)}% recruiter response rate makes active hiring highly unlikely")
@@ -82,14 +77,12 @@ def build_reasoning(candidate: dict, rank: int, feature_breakdown: dict,
     if notice > 60:
         risks.append(f"an extended {int(notice)}-day notice period adds massive friction to the immediate hiring timeline")
 
-    # 4. Check Behavioral Bonuses
     bonuses = []
     if 0 < notice <= 30:
         bonuses.append("immediate sub-30-day availability provides a strong hiring signal for the founding timeline")
     if signals.get("open_to_work_flag"):
         bonuses.append("active open-to-work status confirms immediate reachability")
 
-    # 5. Assemble the Reasoning String Structurally
     # Rotate sentence structures so the CSV doesn't look templated. Use hashlib
     # (NOT the builtin hash(), which is randomized per-process) so the same
     # candidate always gets the same phrasing -> reproducible across runs.
@@ -99,7 +92,7 @@ def build_reasoning(candidate: dict, rank: int, feature_breakdown: dict,
     if hash_val == 0:
         s1 = f"Leveraging {yoe} years of experience, this candidate {s1_core}."
     elif hash_val == 1:
-        s1 = f"Operating currently as a {current_title}, they {s1_core}."
+        s1 = f"Currently a {current_title}, this candidate {s1_core}."
     else:
         s1 = f"This profile {s1_core}."
 

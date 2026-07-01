@@ -137,19 +137,16 @@ def main() -> None:
         candidate = sanitize_candidate(candidate)
         cid = candidate.get("candidate_id")
 
-        # 2. Hard filter -> skip disqualified (is_disqualified returns (bool, reason))
+        # Hard filter drops disqualified candidates (is_disqualified -> (bool, reason)).
         dq, _reason = is_disqualified(candidate)
         if dq:
             continue
 
-        # Embedding similarity (cosine == dot, vectors are L2-normalized)
+        # Embedding similarity: cosine == dot since vectors are L2-normalized.
         row = id_to_row.get(str(cid))
         sim = float(np.dot(cand_embs[row], jd_vec)) if row is not None else 0.0
 
-        # 3. Feature score
         feat, breakdown = feature_score(candidate, sim, weights, constants)
-
-        # 4. JD penalties  5. Behavioral
         pen_mult, pen_reasons = penalty_multiplier(candidate, constants)
         beh_mult, beh_breakdown = behavioral_multiplier(candidate)
 
